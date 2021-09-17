@@ -4,10 +4,11 @@ version := "0.1"
 
 scalaVersion := "2.12.12"
 
-val pulsarVersion = "2.8.0"
+val pulsar4sVersion = "2.7.3"
 
-lazy val pulsarClientOriginal = "org.apache.pulsar" % "pulsar-client-original" % pulsarVersion
+lazy val pulsar4s       = "com.sksamuel.pulsar4s" %% "pulsar4s-core" % pulsar4sVersion
+lazy val pulsar4sCirce  = "com.sksamuel.pulsar4s" %% "pulsar4s-circe" % pulsar4sVersion
 
 libraryDependencies ++= Seq(
-  pulsarClientOriginal
+  pulsar4s, pulsar4sCirce
 )

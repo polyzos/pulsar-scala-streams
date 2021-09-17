@@ -1,39 +1,38 @@
 package io.ipolyzos.producers
 
+import com.sksamuel.pulsar4s.{DefaultProducerMessage, EventTime, ProducerConfig, PulsarClient, Topic}
 import io.ipolyzos.config.AppConfig
 import io.ipolyzos.models.SensorDomain
 import io.ipolyzos.models.SensorDomain.SensorEvent
-import org.apache.pulsar.client.api.PulsarClient
-import org.apache.pulsar.client.impl.schema.JSONSchema
 
 object SensorEventProducer extends App {
-  val pulsarClient: PulsarClient = PulsarClient.builder()
-    .serviceUrl("pulsar://localhost:6650")
-    .build()
-    while (true) {
-      println(SensorDomain.generate())
-    }
 
-  val eventProducer = pulsarClient.newProducer(JSONSchema.of(classOf[SensorEvent]))
-    .producerName("sensor-event-producer")
-    .topic(AppConfig.topicName)
-    .enableBatching(true)
-    .blockIfQueueFull(true)
-    .create()
+  import io.circe.generic.auto._
+  import com.sksamuel.pulsar4s.circe._
+  import scala.concurrent.ExecutionContext.Implicits.global
+
+  val pulsarClient = PulsarClient("pulsar://localhost:6650")
+
+  val topic = Topic(AppConfig.topicName)
+
+  val eventProducer = pulsarClient.producer[SensorEvent](ProducerConfig(topic, producerName = Some("sensor-producer"), enableBatching = Some(true)))
 
   (0 until 100) foreach { _ =>
     val sensorEvent = SensorDomain.generate()
-    eventProducer.newMessage()
-      .key(sensorEvent.sensorId)
-      .value(sensorEvent)
-      .eventTime(sensorEvent.eventTime)
-      .sendAsync()
+    val message = DefaultProducerMessage(
+      Some(sensorEvent.sensorId),
+      sensorEvent,
+      eventTime = Some(EventTime(sensorEvent.eventTime)))
+    eventProducer.sendAsync(message)
+
   }
 
   // add a shutdown hook to clear the resources
-  Runtime.getRuntime.addShutdownHook(new Thread { () =>
-    println("Closing producer and pulsar client..")
-    eventProducer.close()
-    pulsarClient.close()
+  sys.addShutdownHook(new Thread {
+    override def run(): Unit = {
+      println("Closing producer and pulsar client..")
+      eventProducer.close()
+      pulsarClient.close()
+    }
   })
 }

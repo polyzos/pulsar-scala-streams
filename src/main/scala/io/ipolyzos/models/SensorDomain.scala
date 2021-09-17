@@ -15,7 +15,7 @@ object SensorDomain {
   case object Shutdown extends Status
 
   case class SensorEvent(sensorId: String,
-                         status: Status,
+                         status: String,
                          startupTime: Long,
                          eventTime: Long,
                          reading: Double)
@@ -27,10 +27,10 @@ object SensorDomain {
     val reading = if (!sensorId._2) {
       sensorIds += (index -> (sensorId._1, true))
       println(s"Starting Sensor - $index")
-      SensorEvent(sensorId._1, Starting, startupTime, System.currentTimeMillis(), 0.0)
+      SensorEvent(sensorId._1, "Starting", startupTime, System.currentTimeMillis(), 0.0)
     } else {
       val reading = BigDecimal(40 + random.nextGaussian()).setScale(2, BigDecimal.RoundingMode.HALF_UP).toDouble
-      SensorEvent(sensorId._1, Running, startupTime, System.currentTimeMillis(), reading)
+      SensorEvent(sensorId._1, "Running", startupTime, System.currentTimeMillis(), reading)
     }
     reading
   }
