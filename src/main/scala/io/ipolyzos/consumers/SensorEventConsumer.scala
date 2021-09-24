@@ -3,9 +3,8 @@ package io.ipolyzos.consumers
 import com.sksamuel.pulsar4s.{ConsumerConfig, PulsarClient, Subscription, Topic}
 import io.ipolyzos.config.AppConfig
 import io.ipolyzos.models.SensorDomain.SensorEvent
-import org.apache.pulsar.client.api.SubscriptionInitialPosition
+import org.apache.pulsar.client.api.{SubscriptionInitialPosition, SubscriptionType}
 
-import java.util.concurrent.atomic.AtomicInteger
 import scala.util.{Failure, Success}
 
 object SensorEventConsumer {
@@ -20,27 +19,17 @@ object SensorEventConsumer {
       Subscription("sensor-event-subscription"),
       Seq(topic),
       consumerName = Some("sensor-event-consumer"),
-      subscriptionInitialPosition = Some(SubscriptionInitialPosition.Earliest)
+      subscriptionInitialPosition = Some(SubscriptionInitialPosition.Earliest),
+      subscriptionType = Some(SubscriptionType.Exclusive)
     )
 
-
     val consumerFn = pulsarClient.consumer[SensorEvent](consumerConfig)
-
-    // add a shutdown hook to clear the resources
-    sys.addShutdownHook(new Thread {
-      override def run(): Unit = {
-        println("Closing producer and pulsar client..")
-        consumerFn.close()
-        pulsarClient.close()
-      }
-    })
-
-    val totalMessageCount = new AtomicInteger()
+    var totalMessageCount = 0
     while (true) {
       consumerFn.receive match {
         case Success(message) =>
-          val count = totalMessageCount.getAndIncrement()
-          println(s"Total Messages '$count' - Acked Message: ${message.messageId}")
+          totalMessageCount += 1
+          println(s"Total Messages '$totalMessageCount' - Acked Message: ${message.messageId}")
           consumerFn.acknowledge(message.messageId)
         case Failure(exception) =>
           println(s"Failed to receive message: ${exception.getMessage}")

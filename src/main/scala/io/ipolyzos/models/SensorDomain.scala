@@ -9,11 +9,6 @@ object SensorDomain {
 
   private var sensorIds: Map[Int, (String, Boolean)] = (0 until 10).map(index => index -> (UUID.randomUUID().toString, false)).toMap
 
-  trait Status
-  case object Running  extends Status
-  case object Starting extends Status
-  case object Shutdown extends Status
-
   case class SensorEvent(sensorId: String,
                          status: String,
                          startupTime: Long,
